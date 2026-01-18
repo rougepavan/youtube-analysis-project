@@ -1,0 +1,146 @@
+services:
+  frontend:
+    build:
+      context: .
+      args:
+        VITE_API_BASE_URL: /api
+        VITE_YOUTUBE_API_KEY: ${VITE_YOUTUBE_API_KEY:-}
+    image: youtube-analysis-frontend:latest
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "8080:80"
+    volumes:
+      - ./docker/nginx.compose.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - app-network
+
+  backend:
+    image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE to the backend container image reference}
+    environment:
+      - PORT=5001
+      - CLIENT_ORIGIN=http://localhost:8080
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:?Set GOOGLE_CLIENT_ID to the Google OAuth client ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:?Set GOOGLE_CLIENT_SECRET to the Google OAuth client secret}
+      - GOOGLE_REDIRECT_URI=http://localhost:8080/auth/google/callback
+      - GOOGLE_AUTH_SCOPES=openid,profile,email,https://www.googleapis.com/auth/yt-analytics.readonly,https://www.googleapis.com/auth/yt-analytics-monetary.readonly,https://www.googleapis.com/auth/youtube,https://www.googleapis.com/auth/youtubepartner
+      - JWT_SECRET=replace-with-a-secure-random-string
+      - JWT_EXPIRES_IN=7d
+      - SESSION_COOKIE_NAME=ya_session
+      - SESSION_COOKIE_SECURE=false
+      - SESSION_COOKIE_SAMESITE=lax
+      - DB_HOST=host.docker.internal
+      - DB_PORT=5432
+      - DB_USER=yvapuser
+      - DB_PASSWORD=youtube
+      - DB_NAME=yvapp
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY:?Set YOUTUBE_API_KEY to your YouTube Data API key}
+      - SPOTLIGHT_CHANNEL_HANDLES=NDWTB,xiao_lin_shuo,moyutogether,hellobailu,Leisadventure,WorldwithCK,anzhengming,MaxBookClub,laogao,达叔的财智日记
+      - ENABLE_FETCH_PROXY=true
+      - VIDEO_TS_SERVICE_BASE_URL=http://ai-video-transcriber:8000
+      - VIDEO_TS_STREAM_TIMEOUT_MS=900000
+      - VIDEO_TRANSLATE_SERVICE_BASE_URL=http://video-transcriber:8000
+      - VIDEO_TRANSLATE_DEFAULT_MODEL=tiny
+      - VIDEO_TRANSLATE_DEFAULT_DEVICE=cpu
+      - VIDEO_TRANSLATE_DEFAULT_COMPUTE_TYPE=int8
+      - VIDEO_TRANSLATE_SHARED_SECRET={VIDEO_IMAGE_AUTH_SHARED_SECRET}
+      - MINIO_ENDPOINT=${BACKEND_IMAGE_MINIO_ENDPOINT}
+      - MINIO_PORT=${BACKEND_IMAGE_MINIO_PORT}
+      - MINIO_USE_SSL=${BACKEND_IMAGE_MINIO_USE_SSL}
+      - MINIO_ACCESS_KEY=${BACKEND_IMAGE_MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${BACKEND_IMAGE_MINIO_SECRET_KEY}
+      - MINIO_BUCKET=${BACKEND_IMAGE_MINIO_BUCKET}
+      - MINIO_REGION=${BACKEND_IMAGE_MINIO_REGION}
+      - MINIO_PRESIGN_EXPIRY_SECONDS=${BACKEND_IMAGE_MINIO_PRESIGN_EXPIRY_SECONDS}
+
+    expose:
+      - "5001"
+    networks:
+      - app-network
+
+  # ai-video-transcriber:
+  #   image: ${AI_VIDEO_TRANSCRIBER_IMAGE:?Set AI_VIDEO_TRANSCRIBER_IMAGE to the container image reference}
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - OPENAI_API_KEY=${OPENAI_API_KEY:-your_openai_api_key_here}
+  #     - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+  #     - WHISPER_MODEL_SIZE=${WHISPER_MODEL_SIZE:-base}
+  #     - HOST=0.0.0.0
+  #     - PORT=8000
+  #     - MINIO_ENDPOINT=${AI_VIDEO_MINIO_ENDPOINT}
+  #     - MINIO_ACCESS_KEY=${AI_VIDEO_MINIO_ACCESS_KEY}
+  #     - MINIO_SECRET_KEY=${AI_VIDEO_MINIO_SECRET_KEY}
+  #     - MINIO_BUCKET=${AI_VIDEO_MINIO_BUCKET}
+  #     - MINIO_REGION=${AI_VIDEO_MINIO_REGION}
+  #     - MINIO_SECURE=${AI_VIDEO_MINIO_SECURE}
+  #     - MINIO_PREFIX=${AI_VIDEO_MINIO_PREFIX}
+  #   restart: unless-stopped
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 2G
+  #       reservations:
+  #         memory: 1G
+  #   networks:
+  #     - app-network
+
+  video-transcriber:
+    image: ${VIDEO_IMAGE_TRANSCRIBER_IMAGE:?Set VIDEO_IMAGE_TRANSCRIBER_IMAGE to the video-transcriber container image reference}
+    ports:
+      - "8001:8000"
+    environment:
+      # 数据库配置（生产环境）
+      - DATABASE_URL=${VIDEO_IMAGE_DATABASE_URL}
+
+      # Minio 配置
+      - MINIO_ENDPOINT=${VIDEO_IMAGE_MINIO_ENDPOINT}
+      - MINIO_ACCESS_KEY=${VIDEO_IMAGE_MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${VIDEO_IMAGE_MINIO_SECRET_KEY}
+      - MINIO_BUCKET=${VIDEO_IMAGE_MINIO_BUCKET}
+      - MINIO_REGION=${VIDEO_IMAGE_MINIO_REGION}
+      - MINIO_SECURE=${VIDEO_IMAGE_MINIO_SECURE}
+      - MINIO_PREFIX=${VIDEO_IMAGE_MINIO_PREFIX}
+      - MINIO_PUBLIC_BASE_URL=${VIDEO_IMAGE_MINIO_PUBLIC_BASE_URL}
+
+      # faster-whisper 模型配置
+      - FASTER_WHISPER_MODEL=${VIDEO_IMAGE_FASTER_WHISPER_MODEL}
+      - FASTER_WHISPER_DEVICE=${VIDEO_IMAGE_FASTER_WHISPER_DEVICE}
+      - FASTER_WHISPER_COMPUTE_TYPE=${VIDEO_IMAGE_FASTER_WHISPER_COMPUTE_TYPE}
+      - DEFAULT_OUTPUT_FORMAT=${VIDEO_IMAGE_DEFAULT_OUTPUT_FORMAT}
+
+      # 代理配置（中国大陆访问 YouTube 时开启）
+      - PROXY_ENABLED=${VIDEO_IMAGE_PROXY_ENABLED}
+      - PROXY_URL=${VIDEO_IMAGE_PROXY_URL}
+      - PROXY_BYPASS=${VIDEO_IMAGE_PROXY_BYPASS}
+
+      # 临时目录
+      - TEMP_DIR=${VIDEO_IMAGE_TEMP_DIR}
+      - CLEAN_TMP_FILE=${VIDEO_IMAGE_CLEAN_TMP_FILE}
+      - FILE_STORAGE_STRATEGY=${VIDEO_IMAGE_FILE_STORAGE_STRATEGY}
+      - AUTH_ENABLED=${VIDEO_IMAGE_AUTH_ENABLED}
+      - AUTH_SHARED_SECRET=${VIDEO_IMAGE_AUTH_SHARED_SECRET}
+      - AUTH_TOLERANCE_SECONDS=${VIDEO_IMAGE_AUTH_TOLERANCE_SECONDS}
+
+      # 可执行路径（如有自定义安装路径）
+      - FFMPEG_BIN=${VIDEO_IMAGE_FFMPEG_BIN}
+      - YTDLP_BIN=${VIDEO_IMAGE_YTDLP_BIN}
+      # 请不要同时设置 YTDLP_COOKIES_FILE 与 YTDLP_COOKIES_FROM_BROWSER
+      # - YTDLP_COOKIES_FILE=${VIDEO_IMAGE_YTDLP_COOKIES_FILE}
+      - YTDLP_COOKIES_FROM_BROWSER=${VIDEO_IMAGE_YTDLP_COOKIES_FROM_BROWSER}
+
+      # OpenAI 备用配置（若需要调用 whisper-1）
+      - OPENAI_API_KEY=${VIDEO_IMAGE_OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${VIDEO_IMAGE_OPENAI_BASE_URL}
+
+      # YouTube 细粒度配置
+      - YOUTUBE_PLAYER_CLIENT=${VIDEO_IMAGE_YOUTUBE_PLAYER_CLIENT}
+      - YOUTUBE_PO_TOKEN=${VIDEO_IMAGE_YOUTUBE_PO_TOKEN}
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
