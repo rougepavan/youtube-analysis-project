@@ -2,25 +2,10 @@
 
 [![youtube-analysis-project](https://socialify.git.ci/kangchainx/youtube-analysis-project/image?custom_language=React&description=1&font=Inter&language=1&name=1&owner=1&theme=Light)](https://github.com/kangchainx/youtube-analysis-project)
 
-<!-- Badges -->
-<p>
-  <a href="./LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License MIT">
-  </a>
-  <a href="https://github.com/kangchainx/youtube-analysis-project/stargazers">
-    <img src="https://img.shields.io/github/stars/kangchainx/youtube-analysis-project.svg" alt="GitHub stars">
-  </a>
-  <a href="https://github.com/kangchainx/youtube-analysis-project/network/members">
-    <img src="https://img.shields.io/github/forks/kangchainx/youtube-analysis-project.svg" alt="GitHub forks">
-  </a>
-  <a href="https://github.com/kangchainx/youtube-analysis-project/issues">
-    <img src="https://img.shields.io/github/issues/kangchainx/youtube-analysis-project.svg" alt="GitHub issues">
-  </a>
-</p>
 
 <!-- Language Switcher -->
 <p>
-  <strong>English</strong> | <a href="./README_zh.md">中文</a>
+  <strong>English</strong> | <a href="./README_zh.md">Read me</a>
 </p>
 
 </div>
@@ -31,7 +16,7 @@
 
 A modern YouTube channel analytics and video transcription dashboard. Built with React 19 + TypeScript + Vite, featuring real-time SSE updates, channel analytics, video transcription tasks, and notifications.
 
-**Backend Repository**: [youtube-analysis-backend](https://github.com/kangchainx/youtube-analysis-backend)
+**Backend Repository**: [youtube-analysis-backend]
 
 > If this project helps you, please give it a Star 🌟 - your support motivates continuous development!
 
@@ -148,6 +133,6 @@ MIT License - see [LICENSE](./LICENSE) for details. Free for commercial use, att
 
 <div align="center">
 
-**Made with ❤️ by [kangchainx](https://github.com/kangchainx)**
+**Made with ❤️ by [pavan kumar](https://github.com/rougepavan)**
 
 </div>
